@@ -3,6 +3,7 @@ package com.zty.spring;
 import java.io.File;
 import java.lang.annotation.Annotation;
 import java.net.URL;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @Author zty
@@ -10,6 +11,8 @@ import java.net.URL;
  */
 public class ZtyApplicationContext {
     private Class className;
+
+    private ConcurrentHashMap<String,BeanDefinition> beanDefinitionMap = new ConcurrentHashMap<>();
 
     public ZtyApplicationContext(Class className) {
         this.className = className;
@@ -54,7 +57,26 @@ public class ZtyApplicationContext {
                         try {
                             Class<?> classObject = classLoader.loadClass(classNamePath);
                             if (classObject.isAnnotationPresent(Component.class)){
-                                System.out.println("有这个注解");
+                                Component componentAnnotation = classObject.getAnnotation(Component.class);
+                                String beanName = componentAnnotation.value();
+
+
+                                BeanDefinition beanDefinition = new BeanDefinition();
+                                beanDefinition.setType(classObject);
+                                //判断是否包含Scope这个注解
+                                if (classObject.isAnnotationPresent(Scope.class)) {
+                                    //获取这个scope注解对象
+                                    Scope scopeAnnotation = classObject.getAnnotation(Scope.class);
+                                    String beanScope = scopeAnnotation.value();
+                                    beanDefinition.setScope(beanScope);
+                                }else{
+                                    //如果不包含  默认是单例bean
+                                    beanDefinition.setScope("singleton");
+                                }
+
+                                beanDefinitionMap.put(beanName, beanDefinition);
+
+
                             }
                         } catch (ClassNotFoundException e) {
                             e.printStackTrace();
