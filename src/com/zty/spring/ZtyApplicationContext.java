@@ -3,7 +3,6 @@ package com.zty.spring;
 import java.io.File;
 import java.lang.annotation.Annotation;
 import java.net.URL;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @Author zty
@@ -12,9 +11,11 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ZtyApplicationContext {
     private Class className;
 
-    private ConcurrentHashMap<String,BeanDefinition> beanDefinitionMap = new ConcurrentHashMap<>();
-
     public ZtyApplicationContext(Class className) {
+        if (className==null){
+            throw new NullPointerException("类对象不能为空");
+        }
+        //设置一个成员属性，在创建容器时候，传一个配置类，用于获取要加载配置类
         this.className = className;
 
         //当创建容器之后，就该进行扫描，通过什么扫描，那么信息从哪里来，从配置类来
@@ -29,65 +30,21 @@ public class ZtyApplicationContext {
             //对path进行处理，更新路径
             String dealPath = path.replace(".", "/");
 
-            //通过ZtyApplicationContext的类对象的类加载器
+            //获取当前线程中ZtyApplicationContext类的类加载器（类加载器是java中用于加载类和资源的抽象类）
             ClassLoader classLoader = ZtyApplicationContext.class.getClassLoader();
+            //通过类加载器中getResource方法获取指定路径的资源，并返回一个url对象表示该资源的位置 com.zty.serviceCopy
             //通过相对路径 来获取我们想要的绝对路径地址 D:/ywhz_project/ywhz-springcloud/Zty-spring/out/production/Zty-spring com.zty.service.Test
             URL resource = classLoader.getResource(dealPath);
 
-            //通过获取的URL对象的getFile方法，来创建一个file对象，file对象可以是文件夹也可是文件
+            //通过获取的URL对象的getFile方法就是路径，来创建一个file对象，file对象可以是文件夹也可是文件
             File file = new File(resource.getFile());
 
-            //如果是文件夹
-            if (file.isDirectory()){
-                //获取文件列表
-                File[] files = file.listFiles();
-                for (File f : files) {
-                    String absolutePath = f.getAbsolutePath();
-
-
-                    //判断那些文件是以.class结尾的
-                    if (absolutePath.endsWith(".class")) {
-
-                        //获取类加载器想要的路径 com/zty/service/Test.class
-                        String classNamePath = absolutePath.substring(absolutePath.indexOf("com"), absolutePath.indexOf(".class"));
-                        System.out.println(classNamePath);
-                        classNamePath=classNamePath.replace("\\",".");
-
-                        //用类加载器加载当前类
-                        try {
-                            Class<?> classObject = classLoader.loadClass(classNamePath);
-                            if (classObject.isAnnotationPresent(Component.class)){
-                                Component componentAnnotation = classObject.getAnnotation(Component.class);
-                                String beanName = componentAnnotation.value();
-
-
-                                BeanDefinition beanDefinition = new BeanDefinition();
-                                beanDefinition.setType(classObject);
-                                //判断是否包含Scope这个注解
-                                if (classObject.isAnnotationPresent(Scope.class)) {
-                                    //获取这个scope注解对象
-                                    Scope scopeAnnotation = classObject.getAnnotation(Scope.class);
-                                    String beanScope = scopeAnnotation.value();
-                                    beanDefinition.setScope(beanScope);
-                                }else{
-                                    //如果不包含  默认是单例bean
-                                    beanDefinition.setScope("singleton");
-                                }
-
-                                beanDefinitionMap.put(beanName, beanDefinition);
-
-
-                            }
-                        } catch (ClassNotFoundException e) {
-                            e.printStackTrace();
-                        }
-
-                    }
-
-                }
+            try{
+                //递归判断文件夹和文件，然后执行不同的操作
+                traverseFolder(file);
+            }catch (Exception e){
+                e.printStackTrace();
             }
-
-
 
 
         }
@@ -95,7 +52,59 @@ public class ZtyApplicationContext {
 
     public Object getBean(String BeanName) {
         return null;
-
-
     }
+
+
+    /**
+     * 递归遍历文件夹
+     * @param file
+     */
+    private static void traverseFolder(File file) throws ClassNotFoundException {
+        //如果是文件夹
+        if (file.isDirectory()){
+            //获取文件夹里面的文件列表
+            File[] listFiles = file.listFiles();
+            //遍历文件列表
+            for (File listFile : listFiles) {
+                if (listFile.isDirectory()){
+                    traverseFolder(listFile);
+                }else{
+                    checkFileAndLoading(listFile);
+                }
+
+            }
+
+
+        }else{
+            //否则就是文件
+            checkFileAndLoading(file);
+        }
+    }
+
+    /**
+     * 如果是文件，则进行判断 是否包含Component注解
+     * @param listFile
+     * @throws ClassNotFoundException
+     */
+    public static void checkFileAndLoading(File listFile) throws ClassNotFoundException {
+        //判断是否是.class文件 为后缀的
+        String fileName = listFile.getName();
+        if (fileName.endsWith(".class")){
+
+            //首先获取文件的绝对路径
+            String absolutePath = listFile.getAbsolutePath();
+            String className=absolutePath.substring(absolutePath.indexOf("com"),absolutePath.indexOf(".class"));
+            className = className.replace("\\", ".");
+            System.out.println("正在搜索："+className+"的类");
+            Class<?> aClass = Class.forName(className);
+            if (aClass.isAnnotationPresent(Component.class)) {
+                Component componentAnnotation = aClass.getAnnotation(Component.class);
+                String value = componentAnnotation.value();
+                System.out.println(value+":含有Component注解");
+
+            }
+
+        }
+    }
+
 }
