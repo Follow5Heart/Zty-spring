@@ -7,7 +7,7 @@ import com.zty.spring.Scope;
  * @Author zty
  * @Date 2023/2/19 23:58
  */
-@Component(value="UserService")
+@Component()
 @Scope("prototype")
 public class UserService {
 }

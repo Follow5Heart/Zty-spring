@@ -3,13 +3,23 @@ package com.zty.spring;
 import java.io.File;
 import java.lang.annotation.Annotation;
 import java.net.URL;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @Author zty
  * @Date 2023/2/20 0:04
  */
 public class ZtyApplicationContext {
+
+    /**
+     * 保存类型
+     */
     private Class className;
+
+    /**
+     * 用于保存要创建bean的 beanDefinition
+     */
+    private ConcurrentHashMap<String,BeanDefinition> concurrentHashMap=new ConcurrentHashMap<>();
 
     public ZtyApplicationContext(Class className) {
         if (className==null){
@@ -24,8 +34,8 @@ public class ZtyApplicationContext {
             //如果存这个注解，那么从这个配置 类获取这个ComponentScan这个注解对象
             ComponentScan componentScanAnnotation = (ComponentScan) className.getAnnotation(ComponentScan.class);
 
-            //获取ComponentScan注解里面的属性  获取扫描路径
-            String path = componentScanAnnotation.value(); // com.zty.service
+            //获取ComponentScan注解里面的属性  获取扫描路径 com.zty.service
+            String path = componentScanAnnotation.value();
 
             //对path进行处理，更新路径
             String dealPath = path.replace(".", "/");
@@ -41,7 +51,7 @@ public class ZtyApplicationContext {
 
             try{
                 //递归判断文件夹和文件，然后执行不同的操作
-                traverseFolder(file);
+                traverseFolder(file,concurrentHashMap);
             }catch (Exception e){
                 e.printStackTrace();
             }
@@ -59,7 +69,7 @@ public class ZtyApplicationContext {
      * 递归遍历文件夹
      * @param file
      */
-    private static void traverseFolder(File file) throws ClassNotFoundException {
+    private static void traverseFolder(File file,ConcurrentHashMap<String,BeanDefinition> concurrentHashMap) throws ClassNotFoundException {
         //如果是文件夹
         if (file.isDirectory()){
             //获取文件夹里面的文件列表
@@ -67,9 +77,9 @@ public class ZtyApplicationContext {
             //遍历文件列表
             for (File listFile : listFiles) {
                 if (listFile.isDirectory()){
-                    traverseFolder(listFile);
+                    traverseFolder(listFile,concurrentHashMap);
                 }else{
-                    checkFileAndLoading(listFile);
+                    checkFileAndLoading(listFile,concurrentHashMap);
                 }
 
             }
@@ -77,7 +87,7 @@ public class ZtyApplicationContext {
 
         }else{
             //否则就是文件
-            checkFileAndLoading(file);
+            checkFileAndLoading(file,concurrentHashMap);
         }
     }
 
@@ -86,7 +96,7 @@ public class ZtyApplicationContext {
      * @param listFile
      * @throws ClassNotFoundException
      */
-    public static void checkFileAndLoading(File listFile) throws ClassNotFoundException {
+    public static void checkFileAndLoading(File listFile,ConcurrentHashMap<String,BeanDefinition> concurrentHashMap) throws ClassNotFoundException {
         //判断是否是.class文件 为后缀的
         String fileName = listFile.getName();
         if (fileName.endsWith(".class")){
@@ -98,9 +108,38 @@ public class ZtyApplicationContext {
             System.out.println("正在搜索："+className+"的类");
             Class<?> aClass = Class.forName(className);
             if (aClass.isAnnotationPresent(Component.class)) {
+                //获取Component注解对象，获取注解中的值，就是bean的名称，如果没有，应该就是他的类名
                 Component componentAnnotation = aClass.getAnnotation(Component.class);
-                String value = componentAnnotation.value();
-                System.out.println(value+":含有Component注解");
+                //获取Component注解里面的设置bean的值，就是bean的名字，如果没有填写，默认情况下该注解的值是当前类名的首字母小写形式。 MyComponent--myComponent
+                String beanName = componentAnnotation.value();
+                //如果等于"" 获取类名，首字母小写
+                if ("".equals(beanName)){
+                    String aClassName = aClass.getName();
+                    String[]  splitList= className.split("\\.");
+                    aClassName = splitList[splitList.length - 1];
+                    beanName=Character.toLowerCase(aClassName.charAt(0))+aClassName.substring(1);
+                }
+                System.out.println(beanName+":含有Component注解");
+
+                //如果搜索到了含有Component注解，说明这里定义了一个bean 所以我们要生成一个beanDefinition对象
+                BeanDefinition beanDefinition = new BeanDefinition();
+                //设置beanDefinition的类型是什么
+                beanDefinition.setType(aClass);
+                //设置bean的作用域是什么,前提是需要判断当前类有没有@Scope注解，如果没有默认为单例，如果有获取类型
+
+                if (aClass.isAnnotationPresent(Scope.class)) {
+                    //如果有，获取里面作用域值
+                    Scope scopeAnnotation = aClass.getAnnotation(Scope.class);
+                    String scopeType = scopeAnnotation.value();
+                    beanDefinition.setScope(scopeType);
+                }else{
+                    //如果没有Scope注解默认为单例bean
+                    beanDefinition.setScope("singleton");
+
+                }
+
+                //最后存入到concurrentHashMap中
+                concurrentHashMap.put(beanName,beanDefinition);
 
             }
 
