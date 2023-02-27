@@ -3,6 +3,7 @@ package com.zty.spring;
 import java.beans.Introspector;
 import java.io.File;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.util.concurrent.ConcurrentHashMap;
@@ -89,6 +90,24 @@ public class ZtyApplicationContext {
         Object bean = null;
         try {
             bean = classType.getConstructor().newInstance();
+
+            //TODO 依赖注入
+            /*
+            class.getDeclaredFields() 是 Java 反射 API 中的一个方法，它用于获取一个类中声明的所有字段（field），包括私有字段和继承自父类的字段。
+            具体来说，它返回一个 Field 类型的数组，每个 Field 对象代表一个类中声明的字段。可以通过这些 Field 对象获取字段的名称、类型、修饰符等信息，
+            并可以使用 Field 对象来读取或修改对象中的对应字段的值。
+             */
+            Field[] declaredFields = classType.getDeclaredFields();
+            //遍历每个字段，判断是否包含Autowired注解
+            for (Field declaredField : declaredFields) {
+                if (declaredField.isAnnotationPresent(Autowired.class)) {
+                    //把私有的也变成 可访问的
+                    declaredField.setAccessible(true);
+                    //修改一个对象中字段的值，可以通过 Field 对象的 set() 方法来实现。 set() 方法有两个参数，第一个参数是要修改值的对象，第二个参数是要设置的新值
+                    declaredField.set(bean,getBean(declaredField.getName()));
+                }
+
+            }
         } catch (InstantiationException e) {
             e.printStackTrace();
         } catch (IllegalAccessException e) {

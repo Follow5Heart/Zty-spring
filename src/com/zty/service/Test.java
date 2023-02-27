@@ -17,5 +17,7 @@ public class Test {
         System.out.println(ztyApplicationContext.getBean("userService"));
         System.out.println(ztyApplicationContext.getBean("userService"));
 
+        userService.test();
+
     }
 }
