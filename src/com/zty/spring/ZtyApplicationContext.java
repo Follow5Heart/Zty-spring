@@ -1,5 +1,6 @@
 package com.zty.spring;
 
+import java.beans.Introspector;
 import java.io.File;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
@@ -191,9 +192,7 @@ public class ZtyApplicationContext {
                 String beanName = componentAnnotation.value();
                 //如果等于"" 获取类名，首字母小写
                 if ("".equals(beanName)) {
-                    String aClassName = aClass.getName();
-                    String[] splitList = className.split("\\.");
-                    aClassName = splitList[splitList.length - 1];
+                    String aClassName = aClass.getSimpleName();
                     beanName = Character.toLowerCase(aClassName.charAt(0)) + aClassName.substring(1);
                 }
                 System.out.println(beanName + ":含有Component注解");
