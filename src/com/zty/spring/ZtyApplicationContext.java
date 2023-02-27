@@ -51,6 +51,7 @@ public class ZtyApplicationContext {
             //通过相对路径 来获取我们想要的绝对路径地址 D:/ywhz_project/ywhz-springcloud/Zty-spring/out/production/Zty-spring com.zty.service.Test
             URL resource = classLoader.getResource(dealPath);
 
+            System.out.println("要搜索的资源范围："+resource.getFile());
             //通过获取的URL对象的getFile方法就是路径，来创建一个file对象，file对象可以是文件夹也可是文件
             File file = new File(resource.getFile());
 
@@ -67,7 +68,7 @@ public class ZtyApplicationContext {
         ).forEach(entry -> {
             Object bean=createBean(entry.getKey(), entry.getValue());
             //把bean对象保存到单例池中
-            singletonPoolMap.put(entry.getKey(), bean);
+            singletonPoolMap.put(entry.getKey(), bean==null?"":bean);
 
         });
     }
@@ -90,6 +91,7 @@ public class ZtyApplicationContext {
      * @return bean对象
      */
     public Object getBean(String beanName) {
+        Object bean=null;
 
         //通过beanName,获取concurrentHashMap中的beanDefinition
         BeanDefinition beanDefinition = concurrentHashMap.get(beanName);
@@ -102,21 +104,21 @@ public class ZtyApplicationContext {
             if ("singleton".equals(scope)) {
                 //单例的情况,那就是在程序启动的过程中，就创建出来，所以就需要在容器的构造方法中先进行创建
                 //从单例池中获取bean对象
-                Object singletonObject = singletonPoolMap.get(beanName);
+                bean = singletonPoolMap.get(beanName);
                 //如果没有获取到单例bean，说明这个bean还没有在单例池中创建出来，那就创建出来，加入到单例池中
-                if (singletonObject == null){
-                    Object bean = createBean(beanName, beanDefinition);
+                if (bean == null){
+                    bean = createBean(beanName, beanDefinition);
                     singletonPoolMap.put(beanName,bean);
                 }
 
             } else if ("prototype".equals(scope)) {
                 //多例的情况,不用考虑那么多，每次都是重新创建的
-                createBean(beanName,beanDefinition);
+                bean = createBean(beanName, beanDefinition);
             } else {
                 throw new RuntimeException("scope的填写的值错误");
             }
         }
-        return null;
+        return bean;
     }
 
 
