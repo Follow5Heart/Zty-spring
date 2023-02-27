@@ -2,6 +2,7 @@ package com.zty.spring;
 
 import java.io.File;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -80,7 +81,24 @@ public class ZtyApplicationContext {
      * @return
      */
     private Object createBean(String beanName,BeanDefinition beanDefinition) {
-        return null;
+        //只是简单写一下bean的创建
+        //获取在beanDefinition中的类类型
+        Class classType = beanDefinition.getType();
+        //通过反射创建对象
+        Object bean = null;
+        try {
+            bean = classType.getConstructor().newInstance();
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+        }
+
+        return bean;
 
     }
 

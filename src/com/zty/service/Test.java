@@ -11,5 +11,11 @@ public class Test {
         ZtyApplicationContext ztyApplicationContext = new ZtyApplicationContext(AppConfig.class);
         UserService userService = (UserService) ztyApplicationContext.getBean("userService");
 
+        System.out.println(ztyApplicationContext.getBean("userService"));
+        System.out.println(ztyApplicationContext.getBean("userService"));
+        System.out.println(ztyApplicationContext.getBean("userService"));
+        System.out.println(ztyApplicationContext.getBean("userService"));
+        System.out.println(ztyApplicationContext.getBean("userService"));
+
     }
 }
