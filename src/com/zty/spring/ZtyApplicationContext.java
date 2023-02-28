@@ -124,7 +124,7 @@ public class ZtyApplicationContext {
 
             //遍历beanPostProcessor的实现类中postProcessBeforeInitialization方法
             for (BeanPostProcessor beanPostProcessor : beanPostProcessorArrayList) {
-                beanPostProcessor.postProcessBeforeInitialization(beanName,bean);
+                bean=beanPostProcessor.postProcessBeforeInitialization(beanName,bean);
             }
 
             //TODO :初始化
@@ -134,7 +134,7 @@ public class ZtyApplicationContext {
 
             //遍历beanPostProcessor的实现类中postProcessAfterInitialization方法
             for (BeanPostProcessor beanPostProcessor : beanPostProcessorArrayList) {
-                beanPostProcessor.postProcessAfterInitialization(beanName,bean);
+                bean=beanPostProcessor.postProcessAfterInitialization(beanName,bean);
             }
 
         } catch (InstantiationException e) {

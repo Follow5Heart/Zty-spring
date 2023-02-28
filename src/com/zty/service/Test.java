@@ -9,15 +9,15 @@ import com.zty.spring.ZtyApplicationContext;
 public class Test {
     public static void main(String[] args) {
         ZtyApplicationContext ztyApplicationContext = new ZtyApplicationContext(AppConfig.class);
-        UserService userService = (UserService) ztyApplicationContext.getBean("userService");
+        UserInterface userService = (UserInterface) ztyApplicationContext.getBean("userService");
 
-        System.out.println(ztyApplicationContext.getBean("userService"));
-        System.out.println(ztyApplicationContext.getBean("userService"));
-        System.out.println(ztyApplicationContext.getBean("userService"));
-        System.out.println(ztyApplicationContext.getBean("userService"));
-        System.out.println(ztyApplicationContext.getBean("userService"));
+//        System.out.println(ztyApplicationContext.getBean("userService"));
+//        System.out.println(ztyApplicationContext.getBean("userService"));
+//        System.out.println(ztyApplicationContext.getBean("userService"));
+//        System.out.println(ztyApplicationContext.getBean("userService"));
+//        System.out.println(ztyApplicationContext.getBean("userService"));
 
-        userService.test();
+        userService.test1();
 
     }
 }

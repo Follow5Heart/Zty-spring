@@ -8,7 +8,7 @@ import com.zty.spring.*;
  */
 @Component()
 @Scope("prototype")
-public class UserService implements BeanNameAware, InitializingBean {
+public class UserService implements BeanNameAware, InitializingBean,UserInterface{
     @Autowired
     private OrderService orderService;
 
@@ -31,5 +31,10 @@ public class UserService implements BeanNameAware, InitializingBean {
         //在初始化的时候调用，也是判断当前类中是否包实现了Initializing类型
         System.out.println("afterPropertiesSet方法被调用了，当前类实现了Initializing");
 
+    }
+
+    @Override
+    public void test1() {
+        System.out.println("test1方法");
     }
 }
