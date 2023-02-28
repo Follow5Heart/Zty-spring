@@ -6,6 +6,8 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -28,6 +30,11 @@ public class ZtyApplicationContext {
      * 单例池map,用于保存单例bean对象*
      */
     private ConcurrentHashMap<String, Object> singletonPoolMap = new ConcurrentHashMap<>();
+
+    /**
+     * 用来保存实现了BeanPostProcessor接口的 类 的对象
+     */
+    private List<BeanPostProcessor> beanPostProcessorArrayList = new ArrayList<>();
 
     public ZtyApplicationContext(Class className) {
         if (className == null) {
@@ -60,7 +67,7 @@ public class ZtyApplicationContext {
 
             try {
                 //递归判断文件夹和文件，然后执行不同的操作
-                traverseFolder(file, concurrentHashMap);
+                traverseFolder(file, concurrentHashMap,beanPostProcessorArrayList);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -115,9 +122,19 @@ public class ZtyApplicationContext {
                 ((BeanNameAware) bean).setBeanName(beanName);
             }
 
+            //遍历beanPostProcessor的实现类中postProcessBeforeInitialization方法
+            for (BeanPostProcessor beanPostProcessor : beanPostProcessorArrayList) {
+                beanPostProcessor.postProcessBeforeInitialization(beanName,bean);
+            }
+
             //TODO :初始化
             if (bean instanceof InitializingBean){
                 ((InitializingBean) bean).afterPropertiesSet();
+            }
+
+            //遍历beanPostProcessor的实现类中postProcessAfterInitialization方法
+            for (BeanPostProcessor beanPostProcessor : beanPostProcessorArrayList) {
+                beanPostProcessor.postProcessAfterInitialization(beanName,bean);
             }
 
         } catch (InstantiationException e) {
@@ -177,7 +194,7 @@ public class ZtyApplicationContext {
      *
      * @param file
      */
-    private static void traverseFolder(File file, ConcurrentHashMap<String, BeanDefinition> concurrentHashMap) throws ClassNotFoundException {
+    private static void traverseFolder(File file, ConcurrentHashMap<String, BeanDefinition> concurrentHashMap,List<BeanPostProcessor> beanPostProcessorArrayList) throws ClassNotFoundException {
         //如果是文件夹
         if (file.isDirectory()) {
             //获取文件夹里面的文件列表
@@ -185,9 +202,9 @@ public class ZtyApplicationContext {
             //遍历文件列表
             for (File listFile : listFiles) {
                 if (listFile.isDirectory()) {
-                    traverseFolder(listFile, concurrentHashMap);
+                    traverseFolder(listFile, concurrentHashMap,beanPostProcessorArrayList);
                 } else {
-                    checkFileAndLoading(listFile, concurrentHashMap);
+                    checkFileAndLoading(listFile, concurrentHashMap,beanPostProcessorArrayList);
                 }
 
             }
@@ -195,7 +212,7 @@ public class ZtyApplicationContext {
 
         } else {
             //否则就是文件
-            checkFileAndLoading(file, concurrentHashMap);
+            checkFileAndLoading(file, concurrentHashMap,beanPostProcessorArrayList);
         }
     }
 
@@ -205,7 +222,7 @@ public class ZtyApplicationContext {
      * @param listFile
      * @throws ClassNotFoundException
      */
-    public static void checkFileAndLoading(File listFile, ConcurrentHashMap<String, BeanDefinition> concurrentHashMap) throws ClassNotFoundException {
+    public static void checkFileAndLoading(File listFile, ConcurrentHashMap<String, BeanDefinition> concurrentHashMap,List<BeanPostProcessor> beanPostProcessorArrayList) throws ClassNotFoundException {
         //判断是否是.class文件 为后缀的
         String fileName = listFile.getName();
         if (fileName.endsWith(".class")) {
@@ -217,6 +234,21 @@ public class ZtyApplicationContext {
             System.out.println("正在搜索：" + className + "的类");
             Class<?> aClass = Class.forName(className);
             if (aClass.isAnnotationPresent(Component.class)) {
+                //在往下之前，先判断一下这个类是否实现了BeanPostProcessor这个接口
+                if (BeanPostProcessor.class.isAssignableFrom(aClass)){
+                    try {
+                        //创建这个类的对象
+                        BeanPostProcessor instance = (BeanPostProcessor) aClass.newInstance();
+                        //把这个对象放入到beanPostProcessorArrayList中
+                        beanPostProcessorArrayList.add(instance);
+
+                    } catch (InstantiationException e) {
+                        e.printStackTrace();
+                    } catch (IllegalAccessException e) {
+                        e.printStackTrace();
+                    }
+                }
+
                 //获取Component注解对象，获取注解中的值，就是bean的名称，如果没有，应该就是他的类名
                 Component componentAnnotation = aClass.getAnnotation(Component.class);
                 //获取Component注解里面的设置bean的值，就是bean的名字，如果没有填写，默认情况下该注解的值是当前类名的首字母小写形式。 MyComponent--myComponent
@@ -233,7 +265,6 @@ public class ZtyApplicationContext {
                 //设置beanDefinition的类型是什么
                 beanDefinition.setType(aClass);
                 //设置bean的作用域是什么,前提是需要判断当前类有没有@Scope注解，如果没有默认为单例，如果有获取类型
-
                 if (aClass.isAnnotationPresent(Scope.class)) {
                     //如果有，获取里面作用域值
                     Scope scopeAnnotation = aClass.getAnnotation(Scope.class);
@@ -244,6 +275,8 @@ public class ZtyApplicationContext {
                     beanDefinition.setScope("singleton");
 
                 }
+
+
 
                 //最后存入到concurrentHashMap中
                 concurrentHashMap.put(beanName, beanDefinition);
