@@ -108,6 +108,12 @@ public class ZtyApplicationContext {
                 }
 
             }
+
+            //TODO:Aware回调   逻辑就是当前的对象是否实现了Aware回调接口，如果实现了，调用重写的方法
+            //判断当前类型是否实现了BeanNameAware
+            if (bean instanceof BeanNameAware){
+                ((BeanNameAware) bean).setBeanName(beanName);
+            }
         } catch (InstantiationException e) {
             e.printStackTrace();
         } catch (IllegalAccessException e) {
