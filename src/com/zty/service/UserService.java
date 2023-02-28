@@ -1,9 +1,6 @@
 package com.zty.service;
 
-import com.zty.spring.Autowired;
-import com.zty.spring.BeanNameAware;
-import com.zty.spring.Component;
-import com.zty.spring.Scope;
+import com.zty.spring.*;
 
 /**
  * @Author zty
@@ -11,7 +8,7 @@ import com.zty.spring.Scope;
  */
 @Component()
 @Scope("prototype")
-public class UserService implements BeanNameAware {
+public class UserService implements BeanNameAware, InitializingBean {
     @Autowired
     private OrderService orderService;
 
@@ -27,5 +24,12 @@ public class UserService implements BeanNameAware {
     @Override
     public void setBeanName(String beanName) {
         this.beanName=beanName;
+    }
+
+    @Override
+    public void afterPropertiesSet() {
+        //在初始化的时候调用，也是判断当前类中是否包实现了Initializing类型
+        System.out.println("afterPropertiesSet方法被调用了，当前类实现了Initializing");
+
     }
 }

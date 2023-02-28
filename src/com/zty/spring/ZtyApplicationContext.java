@@ -114,6 +114,12 @@ public class ZtyApplicationContext {
             if (bean instanceof BeanNameAware){
                 ((BeanNameAware) bean).setBeanName(beanName);
             }
+
+            //TODO :初始化
+            if (bean instanceof InitializingBean){
+                ((InitializingBean) bean).afterPropertiesSet();
+            }
+
         } catch (InstantiationException e) {
             e.printStackTrace();
         } catch (IllegalAccessException e) {
